@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Elite Food Store - Engineering Edition Pro</title>
+    <link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#00f2ff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Elite Food">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" sizes="192x192" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+
+<link rel="manifest" href="manifest.json">
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary: #00f2ff; --bg: #0a0a0a; --card: #151515; --text: #ffffff; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { background: #000; color: var(--text); font-family: 'Inter', sans-serif; margin: 0; display: flex; justify-content: center; height: 100vh; }
+        .app-container { width: 100%; max-width: 400px; height: 100%; background: var(--bg); position: relative; display: flex; flex-direction: column; overflow: hidden; }
+        .header { padding: 50px 20px 20px; background: var(--card); border-bottom: 1px solid #222; }
+        .header h1 { font-size: 1.2rem; margin: 0; color: var(--primary); }
+        .content { flex: 1; overflow-y: auto; padding: 20px; }
+        .product-card { background: var(--card); border-radius: 20px; padding: 15px; margin-bottom: 20px; display: flex; align-items: center; gap: 15px; transition: 0.3s; cursor: pointer; border: 1px solid #222; }
+        .product-card:active { transform: scale(0.95); background: #222; }
+        .product-img { width: 80px; height: 80px; border-radius: 15px; object-fit: cover; }
+        .product-info { flex: 1; }
+        .product-info h3 { margin: 0; font-size: 1rem; }
+        .product-price { color: var(--primary); font-weight: 700; margin-top: 5px; }
+        .screen { display: none; height: 100%; flex-direction: column; }
+        .screen.active { display: flex; }
+        .section-title { font-size: 0.9rem; color: #888; text-transform: uppercase; margin: 20px 0 10px; letter-spacing: 1px; }
+        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        .option-item { background: #1a1a1a; padding: 12px; border-radius: 12px; border: 1px solid #333; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: 0.2s; }
+        .option-item.selected { border-color: var(--primary); background: rgba(0, 242, 255, 0.1); }
+        .option-item span { font-size: 0.85rem; }
+        .add-price { color: var(--primary); font-size: 0.75rem; font-weight: bold; }
+        .main-btn { background: var(--primary); color: #000; font-weight: 900; padding: 20px; text-align: center; margin: 20px; border-radius: 15px; text-transform: uppercase; cursor: pointer; }
+        input { background: #222; border: 1px solid #333; color: white; padding: 12px; border-radius: 10px; width: 100%; margin-bottom: 10px; outline: none; }
+        .ticket-box { background: #fff; color: #000; padding: 20px; border-radius: 10px; font-family: 'Courier New', monospace; margin: 15px 0; border: 2px dashed #000; }
+        .ticket-row { display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 4px; }
+        
+        .tracking-card { background: #111; padding: 15px; border-radius: 15px; border-left: 5px solid var(--primary); margin-bottom: 15px; }
+        .status-dot { height: 10px; width: 10px; background-color: var(--primary); border-radius: 50%; display: inline-block; margin-right: 5px; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+        .gps-frame { width: 100%; height: 150px; background: #222; border-radius: 15px; margin-bottom: 15px; overflow: hidden; position: relative; border: 1px solid #333; display: flex; align-items: center; justify-content: center; }
+        .chat-area { background: #080808; border: 1px solid #222; border-radius: 12px; height: 180px; overflow-y: auto; padding: 10px; margin-bottom: 10px; display: flex; flex-direction: column; gap: 8px; }
+        .msg { padding: 8px 12px; border-radius: 10px; font-size: 0.8rem; max-width: 80%; }
+        .msg.bot { background: #222; align-self: flex-start; }
+        .msg.user { background: var(--primary); color: #000; align-self: flex-end; }
+
+        #action-area { bottom: 85px !important; z-index: 10001 !important; pointer-events: auto !important; }
+        .screen, .admin-panel { padding-bottom: 180px !important; overflow-y: auto !important; }
+
+        .admin-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: #000; display: flex; border-top: 1px solid var(--primary); height: 65px; z-index: 10000; }
+        .admin-btn { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 0.65rem; color: #555; font-weight: 700; cursor: pointer; }
+        .admin-btn.active { color: var(--primary); background: #111; border-top: 2px solid var(--primary); }
+        .admin-panel { display: none; position: fixed; top: 0; left: 0; width: 100%; height: calc(100% - 65px); background: var(--bg); padding: 25px; box-sizing: border-box; overflow-y: auto; z-index: 9999; }
+        .admin-panel.active { display: block; }
+        
+        .setting-input { width: 100%; background: #111; border: 1px solid #333; color: #fff; padding: 12px; border-radius: 8px; margin-bottom: 15px; }
+        .venta-card { background: #111; border: 1px solid #222; padding: 15px; border-radius: 12px; margin-bottom: 10px; border-left: 4px solid var(--primary); }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <div id="shop-screen" class="screen active">
+        <div class="header"><h1>ELITE FOOD STORE</h1></div>
+        <div class="content" id="product-list"></div>
+    </div>
+    <div id="detail-screen" class="screen">
+        <div class="header"><h1 id="back-btn" onclick="changeScreen('shop-screen')" style="cursor:pointer">← VOLVER</h1></div>
+        <div class="content" id="product-detail"></div>
+        <div id="action-area"><div class="main-btn" onclick="goToDelivery()">AÑADIR AL CARRITO</div></div>
+    </div>
+</div>
+
+<div id="panel-settings" class="admin-panel">
+    <h1 style="color:var(--primary); font-weight:900;">CONFIGURACIÓN</h1>
+    <label style="color:#666; font-size:0.7rem;">NOMBRE DEL LOCAL</label>
+    <input type="text" id="set-name" class="setting-input">
+    <label style="color:#666; font-size:0.7rem;">DIRECCIÓN</label>
+    <input type="text" id="set-dir" class="setting-input">
+    <label style="color:#666; font-size:0.7rem;">WHATSAPP</label>
+    <input type="text" id="set-wa" class="setting-input">
+    <label style="color:#666; font-size:0.7rem;">MENSAJE PIE DE TICKET</label>
+    <input type="text" id="set-msg" class="setting-input">
+    <button class="main-btn" onclick="saveSettings()">💾 GUARDAR CAMBIOS</button>
+</div>
+
+<div id="panel-admin" class="admin-panel">
+    <h1 style="color:var(--primary); font-weight:900;">AUDITORÍA</h1>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;">
+        <div class="venta-card" style="text-align: center; border-left:none;">
+            <small>TOTAL</small>
+            <h2 id="caja-total-valor">$0</h2>
+        </div>
+        <div class="venta-card" style="text-align: center; border-left:none;">
+            <small>PEDIDOS</small>
+            <h2 id="caja-cantidad-valor">0</h2>
+        </div>
+    </div>
+    <button class="main-btn" onclick="descargarPDFCierre()" style="background:#fff; color:#000; margin-bottom:10px;">📥 CIERRE DIARIO PDF</button>
+    <button onclick="limpiarCaja()" style="width:100%; background:transparent; border:none; color:#ff4444; font-size:0.7rem; margin-top:10px;">BORRAR HISTORIAL</button>
+    <div id="lista-ventas-hoy" style="margin-top:20px;"></div>
+</div>
+
+<div class="admin-bar">
+    <div class="admin-btn active" id="btn-ventas" onclick="showAdminTab('ventas')">🛒 TIENDA</div>
+    <div class="admin-btn" id="btn-caja" onclick="showAdminTab('caja')">📊 REPORTES</div>
+    <div class="admin-btn" id="btn-set" onclick="showAdminTab('settings')">⚙️ AJUSTES</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+
+<script>
+const productos = [
+    { id: 1, type: 'burger', name: "Premium Burger", price: 12.50, img: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400" },
+    { id: 2, type: 'pizza', name: "Italian Pizza Pro", price: 15.00, img: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400" },
+    { id: 3, type: 'sushi', name: "Sushimanía Elite", price: 20.00, img: "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=400" },
+    { id: 4, type: 'pasta', name: "Tallarines Artesanales", price: 14.00, img: "https://images.unsplash.com/photo-1551183053-bf91a1d81141?w=400" },
+    { id: 5, type: 'asado', name: "Parrillada al Carbón", price: 30.00, img: "https://images.unsplash.com/photo-1544025162-d76694265947?w=400" }
+];
+
+const pizzaSizes = [{ id: 'ps1', name: "Pequeña", price: 0 }, { id: 'ps2', name: "Mediana", price: 5.00 }, { id: 'ps3', name: "Grande", price: 8.00 }, { id: 'ps4', name: "Familia XL", price: 12.00 }];
+const burgerProteinas = [{ id: 'p1', name: "Res Angus", price: 0 }, { id: 'p2', name: "Wagyu Premium", price: 5.50 }, { id: 'p3', name: "Pollo Crispy", price: 0 }, { id: 'p4', name: "Pollo Grill", price: 0 }, { id: 'p5', name: "Cerdo Pulled Pork", price: 2.50 }, { id: 'p6', name: "Vegana", price: 1.50 }];
+const burgerEstilos = [{ id: 'st1', name: "Clásica", price: 0 }, { id: 'st2', name: "BBQ Smoked", price: 1.50 }, { id: 'st3', name: "Hawaiana", price: 2.00 }, { id: 'st4', name: "Mexicana", price: 1.50 }, { id: 'st5', name: "Trifásica", price: 6.00 }];
+const burgerQuesos = [{ id: 'q1', name: "Cheddar Fundido", price: 1.00 }, { id: 'q2', name: "Mantecoso", price: 1.00 }, { id: 'q3', name: "Azul (Gorgonzola)", price: 2.00 }, { id: 'q4', name: "Cabra", price: 2.00 }];
+const burgerMenuSizes = [{ id: 'bs1', name: "Cajita Infantil", price: -2.00 }, { id: 'bs2', name: "Mediana", price: 0 }, { id: 'bs3', name: "Grande", price: 3.50 }, { id: 'bs4', name: "XL Monster", price: 6.00 }];
+const sushiPieces = [{ id: 'sp1', name: "30 Piezas", price: 0 }, { id: 'sp2', name: "100 Piezas", price: 35.00 }, { id: 'sp3', name: "200 Piezas", price: 65.00 }, { id: 'sp4', name: "400 Piezas", price: 120.00 }];
+const sushiWraps = [{ id: 'sw1', name: "Sésamo", price: 0 }, { id: 'sw2', name: "Nori", price: 0 }, { id: 'sw3', name: "Tempura", price: 2.50 }, { id: 'sw4', name: "Panko", price: 2.50 }, { id: 'sw5', name: "MIXTO", price: 4.00 }];
+const pastaEstilos = [{ id: 'pa1', name: "Alfredo", price: 0 }, { id: 'pa2', name: "Boloñesa", price: 2.00 }, { id: 'pa3', name: "Pesto Genovés", price: 1.50 }, { id: 'pa4', name: "Carbonara", price: 3.00 }, { id: 'pa5', name: "Frutos del Mar", price: 6.00 }];
+const pastaProteinas = [{ id: 'pp1', name: "Sin Carne", price: 0 }, { id: 'pp2', name: "Pollo", price: 3.50 }, { id: 'pp3', name: "Camarones", price: 6.00 }, { id: 'pp4', name: "Albóndigas", price: 4.50 }];
+const asadoCortes = [{ id: 'ac1', name: "Básico (1 Pers)", price: 0 }, { id: 'ac2', name: "Familiar (3 Pers)", price: 25.00 }, { id: 'ac3', name: "Premium (5 Pers)", price: 50.00 }];
+const asadoTerminos = [{ id: 'at1', name: "A la Inglesa", price: 0 }, { id: 'at2', name: "Término Medio", price: 0 }, { id: 'at3', name: "3/4", price: 0 }, { id: 'at4', name: "Bien Cocida", price: 0 }];
+const asadoExtras = [{ id: 'ae1', name: "Extra Chorizo", price: 3.00 }, { id: 'ae2', name: "Prieta", price: 3.00 }, { id: 'ae3', name: "Mollejas", price: 5.00 }];
+const allSides = [{ id: 's1', name: "Papas Fritas", price: 3.50 }, { id: 's2', name: "Aros Cebolla", price: 4.00 }, { id: 's3', name: "Rollos Queso", price: 4.50 }, { id: 's4', name: "Nuggets x6", price: 5.00 }];
+
+const bebidasDetalle = {
+    refrescos: [{ id: 'r1', name: "Coca-Cola", price: 0 }, { id: 'r2', name: "Fanta", price: 0 }, { id: 'r3', name: "Sprite", price: 0 }, { id: 'r4', name: "Bilz", price: 0 }, { id: 'r5', name: "Pap", price: 0 }],
+    agua: [{ id: 'a1', name: "Sin Gas", price: 0 }, { id: 'a2', name: "Con Gas", price: 0 }],
+    jugos: [{ id: 'j1', name: "Naranja", price: 0 }, { id: 'j2', name: "Frambuesa", price: 0 }],
+    tamanos: [{ id: 't1', name: "500ml", price: 2.50 }, { id: 't2', name: "1.5 Lt", price: 4.50 }]
+};
+let selectedProduct = null;
+let currentOrder = { basePrice: 0, extras: [], bebidaPrecio: 0, subOptions: {}, total: 0 };
+let deliveryMethod = '';
+const NUMERO_REST = "+56953747305";
+
+let ventasDB = JSON.parse(localStorage.getItem('elite_v5_db') || '[]');
+let configElite = JSON.parse(localStorage.getItem('elite_config') || JSON.stringify({
+    name: "ELITE FOOD STORE",
+    dir: "CALAMA, CHILE",
+    wa: "+56 9 0000 0000",
+    msg: "Gracias por su preferencia"
+}));
+
+function initStore() {
+    const list = document.getElementById('product-list');
+    list.innerHTML = productos.map(p => `
+        <div class="product-card" onclick="viewProduct(${p.id})">
+            <img src="${p.img}" class="product-img">
+            <div class="product-info"><h3>${p.name}</h3><div class="product-price">$${p.price.toFixed(2)}</div></div>
+        </div>`).join('');
+    
+    document.getElementById('set-name').value = configElite.name;
+    document.getElementById('set-dir').value = configElite.dir;
+    document.getElementById('set-wa').value = configElite.wa;
+    document.getElementById('set-msg').value = configElite.msg;
+}
+
+function viewProduct(id) {
+    selectedProduct = productos.find(p => p.id === id);
+    currentOrder = { basePrice: selectedProduct.price, extras: [], bebidaPrecio: 0, subOptions: {}, total: selectedProduct.price };
+    const detail = document.getElementById('product-detail');
+    document.getElementById('action-area').style.display = 'block';
+    let optionsHTML = '';
+
+    if(selectedProduct.type === 'pizza') { optionsHTML += renderSection("Tamaño", pizzaSizes, "size"); }
+    else if(selectedProduct.type === 'burger') {
+        optionsHTML += renderSection("1. Proteína", burgerProteinas, "protein");
+        optionsHTML += renderSection("2. Estilo", burgerEstilos, "style");
+        optionsHTML += renderSection("3. Queso", burgerQuesos, "cheese");
+        optionsHTML += renderSection("4. Menú", burgerMenuSizes, "size");
+    } else if(selectedProduct.type === 'sushi') {
+        optionsHTML += renderSection("1. Piezas", sushiPieces, "pieces");
+        optionsHTML += renderSection("2. Envoltura", sushiWraps, "wrap");
+    } else if(selectedProduct.type === 'pasta') {
+        optionsHTML += renderSection("1. Salsa", pastaEstilos, "sauce");
+        optionsHTML += renderSection("2. Extra", pastaProteinas, "protein");
+    } else if(selectedProduct.type === 'asado') {
+        optionsHTML += renderSection("1. Formato", asadoCortes, "format");
+        optionsHTML += renderSection("2. Término", asadoTerminos, "cook");
+        optionsHTML += renderExtrasSection("3. Agregados", asadoExtras);
+    }
+
+    optionsHTML += renderExtrasSection("Acompañamientos", allSides);
+    optionsHTML += `
+        <div class="section-title">Bebida</div>
+        <div class="options-grid">
+            <div class="option-item bev-cat" onclick="renderBebidaOpciones('refrescos')">Gaseosas</div>
+            <div class="option-item bev-cat" onclick="renderBebidaOpciones('agua')">Agua</div>
+        </div>
+        <div id="sub-menu-bebida" class="options-grid"></div>
+        <div class="section-title">Tamaño Bebida</div>
+        <div class="options-grid">
+            ${bebidasDetalle.tamanos.map(t => `<div class="option-item d-size" id="dz-${t.id}" onclick="selectDrinkSize('${t.id}')"><span>${t.name}</span><span class="add-price">$${t.price.toFixed(2)}</span></div>`).join('')}
+        </div>`;
+
+    detail.innerHTML = `<img src="${selectedProduct.img}" style="width:100%; border-radius:20px; margin-bottom:15px"><h2>${selectedProduct.name}</h2>${optionsHTML}`;
+    updateTotal();
+    changeScreen('detail-screen');
+}
+
+function renderSection(title, items, group) {
+    return `<div class="section-title">${title}</div><div class="options-grid">
+        ${items.map(item => `<div class="option-item ${group}-item" id="${group}-${item.id}" onclick="selectSubOpt('${group}', '${item.id}', ${JSON.stringify(items).replace(/"/g, '&quot;')})"><span>${item.name}</span><span class="add-price">+$${item.price.toFixed(2)}</span></div>`).join('')}
+    </div>`;
+}
+
+function renderExtrasSection(title, items) {
+    return `<div class="section-title">${title}</div><div class="options-grid">
+        ${items.map(item => `<div class="option-item extra-item" id="extra-${item.id}" onclick="toggleExtra('${item.id}', ${JSON.stringify(items).replace(/"/g, '&quot;')})"><span>${item.name}</span><span class="add-price">+$${item.price.toFixed(2)}</span></div>`).join('')}
+    </div>`;
+}
+
+function selectSubOpt(group, id, list) {
+    const item = list.find(i => i.id === id);
+    document.querySelectorAll(`.${group}-item`).forEach(el => el.classList.remove('selected'));
+    document.getElementById(`${group}-${id}`).classList.add('selected');
+    currentOrder.subOptions[group] = { name: item.name, price: item.price };
+    updateTotal();
+}
+
+function toggleExtra(id, list) {
+    const item = list.find(s => s.id === id);
+    const idx = currentOrder.extras.findIndex(e => e.id === id);
+    if(idx > -1) { 
+        currentOrder.extras.splice(idx, 1); 
+        document.getElementById(`extra-${id}`).classList.remove('selected'); 
+    } else { 
+        currentOrder.extras.push(item); 
+        document.getElementById(`extra-${id}`).classList.add('selected'); 
+    }
+    updateTotal();
+}
+
+function renderBebidaOpciones(tipo) {
+    document.getElementById('sub-menu-bebida').innerHTML = bebidasDetalle[tipo].map(o => `<div class="option-item d-flav" id="f-${o.id}" onclick="selectFlavor('${o.id}', '${o.name}')"><span>${o.name}</span></div>`).join('');
+}
+
+function selectFlavor(id, name) {
+    document.querySelectorAll('.d-flav').forEach(el => el.classList.remove('selected'));
+    document.getElementById(`f-${id}`).classList.add('selected');
+    currentOrder.bebidaNombre = name;
+}
+
+function selectDrinkSize(id) {
+    const t = bebidasDetalle.tamanos.find(x => x.id === id);
+    document.querySelectorAll('.d-size').forEach(el => el.classList.remove('selected'));
+    document.getElementById(`dz-${id}`).classList.add('selected');
+    currentOrder.bebidaPrecio = t.price;
+    currentOrder.bebidaSize = t.name;
+    updateTotal();
+}
+
+function updateTotal() {
+    let subTotal = Object.values(currentOrder.subOptions).reduce((a, b) => a + b.price, 0);
+    let extraTotal = currentOrder.extras.reduce((a, b) => a + b.price, 0);
+    currentOrder.total = currentOrder.basePrice + subTotal + extraTotal + (currentOrder.bebidaPrecio || 0);
+    const btnMain = document.querySelector('.main-btn');
+    if(btnMain) btnMain.innerText = `AÑADIR - $${currentOrder.total.toLocaleString('es-CL')}`;
+}
+
+function goToDelivery() {
+    document.getElementById('action-area').style.display = 'none';
+    document.getElementById('product-detail').innerHTML = `
+        <h2 style="color:var(--primary); text-align:center">¿Cómo lo quieres?</h2>
+        <div class="options-grid" style="grid-template-columns: 1fr; margin-top:20px">
+            <div class="option-item" onclick="setDelivery('Delivery')"><span>🚀 Enviar por Delivery</span></div>
+            <div class="option-item" onclick="setDelivery('Retiro')"><span>🛍️ Retirar en Sucursal</span></div>
+            <div class="option-item" onclick="setDelivery('Local')"><span>🍽️ Consumir en el Local</span></div>
+        </div>`;
+}
+
+function setDelivery(method) {
+    deliveryMethod = method;
+    showPaymentScreen();
+}
+
+function showPaymentScreen() {
+    document.getElementById('product-detail').innerHTML = `
+        <h2 style="color:var(--primary)">Método de Pago</h2>
+        <p style="color:#888">Total: <b style="color:#fff">$${currentOrder.total.toLocaleString('es-CL')}</b></p>
+        <div class="options-grid" style="grid-template-columns: 1fr">
+            <div class="option-item" onclick="processFinalPay('Efectivo')"><span>💵 Efectivo</span></div>
+            <div class="option-item" onclick="togglePayUI('qr')"><span>📲 Transferencia (QR)</span></div>
+            <div id="qr-area" style="display:none; text-align:center; background:white; padding:15px; border-radius:15px">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=EliteStoreQR" style="width:140px">
+                <div class="main-btn" style="margin-top:10px; padding:10px" onclick="processFinalPay('Transferencia')">Listo, transferí</div>
+            </div>
+            <div class="option-item" onclick="togglePayUI('card')"><span>💳 Tarjeta</span></div>
+            <div id="card-area" style="display:none"><input type="text" placeholder="Número de Tarjeta"><div class="main-btn" onclick="processFinalPay('Tarjeta')">Pagar Ahora</div></div>
+        </div>`;
+}
+
+function togglePayUI(type) {
+    document.getElementById('qr-area').style.display = type === 'qr' ? 'block' : 'none';
+    document.getElementById('card-area').style.display = type === 'card' ? 'block' : 'none';
+}
+
+function processFinalPay(method) {
+    if(deliveryMethod === 'Delivery') {
+        document.getElementById('product-detail').innerHTML = `
+            <h2 style="color:var(--primary)">Datos de Envío</h2>
+            <input type="text" id="u-nombre" placeholder="Tu Nombre">
+            <input type="text" id="u-dir" placeholder="Dirección Exacta">
+            <input type="text" id="u-tel" placeholder="Teléfono">
+            <div class="main-btn" onclick="prepararPedido('${method}')">GENERAR TICKET</div>`;
+    } else { prepararPedido(method); }
+}
+
+function prepararPedido(method) {
+    const nombre = document.getElementById('u-nombre')?.value || 'CLIENTE LOCAL';
+    const dir = document.getElementById('u-dir')?.value || 'CALAMA';
+    const tel = document.getElementById('u-tel')?.value || 'N/A';
+    sendToWhatsApp(method, nombre, dir, tel);
+}
+
+window.sendToWhatsApp = function(metodo, nombre, dir, tel) {
+    try {
+        let itemsFinales = [];
+        itemsFinales.push({ desc: "VALOR BASE", precio: selectedProduct.price });
+
+        // Capturamos Sub-Opciones
+        Object.keys(currentOrder.subOptions).forEach(key => {
+            const opt = currentOrder.subOptions[key];
+            itemsFinales.push({ desc: opt.name.toUpperCase(), precio: opt.price });
+        });
+
+        // Capturamos Extras
+        currentOrder.extras.forEach(ex => {
+            itemsFinales.push({ desc: ex.name.toUpperCase(), precio: ex.price });
+        });
+
+        // Capturamos Bebida
+        if(currentOrder.bebidaNombre) {
+            itemsFinales.push({ desc: `${currentOrder.bebidaNombre.toUpperCase()} (${currentOrder.bebidaSize})`, precio: currentOrder.bebidaPrecio });
+        }
+
+        const v = {
+            folio: "F-" + Math.floor(10000 + Math.random() * 90000),
+            fecha: new Date().toLocaleDateString('es-CL'),
+            hora: new Date().toLocaleTimeString('es-CL', {hour:'2-digit', minute:'2-digit'}),
+            cliente: nombre.toUpperCase(),
+            producto: selectedProduct.name.toUpperCase(),
+            items: itemsFinales,
+            total: currentOrder.total,
+            pago: metodo.toUpperCase(),
+            metodoEnvio: deliveryMethod
+        };
+
+        ventasDB.push(v);
+        localStorage.setItem('elite_v5_db', JSON.stringify(ventasDB));
+
+        // WHATSAPP
+        let msgWA = `*NUEVO PEDIDO - ${configElite.name}*\n\n👤 *Cliente:* ${nombre}\n📍 *Entrega:* ${deliveryMethod}\n`;
+        if(deliveryMethod === 'Delivery') msgWA += `🏠 *Dirección:* ${dir}\n`;
+        msgWA += `\n🍴 *Detalle:* \n- ${v.producto}\n`;
+        itemsFinales.forEach(i => { if(i.desc !== "VALOR BASE") msgWA += `- ${i.desc} ${i.precio > 0 ? '($'+i.precio.toLocaleString('es-CL')+')' : ''}\n`; });
+        msgWA += `\n💰 *TOTAL:* $${v.total.toLocaleString('es-CL')}\n💳 *PAGO:* ${v.pago}`;
+        window.open(`https://api.whatsapp.com/send?phone=${NUMERO_REST}&text=${encodeURIComponent(msgWA)}`, '_blank');
+
+        generarTicketGourmet(v);
+        setTimeout(() => { showCallCenter(); }, 2000);
+    } catch (e) { alert("Error: " + e.message); }
+};
+
+function generarTicketGourmet(v) {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: 'mm', format: [80, 200] });
+    doc.setFont("courier", "bold"); doc.setFontSize(14);
+    doc.text(configElite.name, 40, 15, { align: "center" });
+    doc.setFont("courier", "normal"); doc.setFontSize(8);
+    doc.text(configElite.dir, 40, 20, { align: "center" });
+    doc.text(`WA: ${configElite.wa}`, 40, 24, { align: "center" });
+    doc.text("--------------------------------", 40, 28, { align: "center" });
+    doc.text(`FOLIO: ${v.folio}`, 10, 34);
+    doc.text(`FECHA: ${v.fecha} ${v.hora}`, 10, 39);
+    doc.text(`CLIENTE: ${v.cliente}`, 10, 44);
+    doc.text("--------------------------------", 40, 48, { align: "center" });
+    doc.setFont("courier", "bold"); doc.text(`PRODUCTO: ${v.producto}`, 10, 54);
+    doc.setFont("courier", "normal");
+    let y = 60;
+    v.items.forEach(i => {
+        let n = i.desc.substring(0, 22);
+        doc.text(n, 10, y);
+        let p = i.precio > 0 ? `$${i.precio.toLocaleString('es-CL')}` : "--";
+        doc.text(p, 70, y, { align: "right" });
+        y += 5;
+    });
+    doc.text("--------------------------------", 40, y + 2, { align: "center" }); y += 10;
+    doc.setFontSize(12); doc.setFont("courier", "bold");
+    doc.text("TOTAL:", 10, y); doc.text(`$${v.total.toLocaleString('es-CL')}`, 70, y, { align: "right" });
+    y += 10; doc.setFontSize(8); doc.setFont("courier", "normal");
+    doc.text(`MÉTODO PAGO: ${v.pago}`, 10, y);
+    doc.text(`ENVÍO: ${v.metodoEnvio}`, 10, y+4);
+    doc.setFont("courier", "italic"); doc.text(configElite.msg, 40, y + 15, { align: "center" });
+    
+    // Auto impresión
+    const blobURL = doc.output('bloburl');
+    const iframe = document.createElement('iframe');
+    iframe.style.display = 'none';
+    iframe.src = blobURL;
+    document.body.appendChild(iframe);
+    iframe.onload = () => { setTimeout(() => { iframe.contentWindow.print(); }, 200); };
+    doc.save(`Ticket_${v.folio}.pdf`);
+}
+
+function showCallCenter() {
+    // Recuperamos el logo guardado si existe, si no, uno por defecto
+    const savedLogo = localStorage.getItem('elite_branding_img') || "https://via.placeholder.com/350x120/0a0a0a/00f2ff?text=Elite+Food+Store";
+
+    document.getElementById('product-detail').innerHTML = `
+        <h2 style="color:var(--primary); text-align:center">SEGUIMIENTO</h2>
+        <div class="tracking-card"><div class="status-dot"></div> <b style="color:var(--primary)">ORDEN EN PROCESO</b></div>
+        
+        <div id="branding-area" style="width: 100%; background: #151515; border-radius: 15px; padding: 15px; margin-bottom: 15px; border: 1px solid #333; text-align: center; cursor: pointer;" onclick="document.getElementById('upload-branding').click()">
+            <input type="file" id="upload-branding" accept="image/*" style="display: none;" onchange="updateBrandingImage(event)">
+            <img id="branding-img" src="${savedLogo}" style="max-width: 100%; border-radius: 8px; border: 1px dashed #00f2ff55; display: block; margin: 0 auto;">
+            <p style="font-size: 0.6rem; color: #00f2ff; margin-top: 10px; font-weight: bold; letter-spacing: 1px;">TAP PARA CAMBIAR LOGO</p>
+        </div>
+
+        <div class="chat-area" id="internal-chat"><div class="msg bot">¡Recibimos tu orden! La estamos preparando con todo el nivel Elite.</div></div>
+        <div style="display:flex; gap:5px; margin-bottom:15px"><input type="text" id="chat-input" placeholder="Mensaje..." style="margin-bottom:0; flex:1"><div class="main-btn" style="margin:0; padding:12px; font-size:0.7rem" onclick="sendInternalMsg()">ENVIAR</div></div>
+        <div class="options-grid">
+            <div class="option-item" onclick="window.location.href='tel:+${NUMERO_REST}'"><span>📞 Llamar</span></div>
+            <div class="option-item" onclick="window.open('https://wa.me/${NUMERO_REST}')"><span>🆘 Soporte</span></div>
+        </div>`;
+}
+
+// Función auxiliar para procesar la imagen
+function updateBrandingImage(event) {
+    const file = event.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('branding-img').src = e.target.result;
+            localStorage.setItem('elite_branding_img', e.target.result);
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
+function sendInternalMsg() {
+    const input = document.getElementById('chat-input');
+    const chat = document.getElementById('internal-chat');
+    if(!input.value) return;
+    const uMsg = document.createElement('div'); uMsg.className = "msg user"; uMsg.innerText = input.value;
+    chat.appendChild(uMsg); input.value = ""; chat.scrollTop = chat.scrollHeight;
+    setTimeout(() => {
+        const bMsg = document.createElement('div'); bMsg.className = "msg bot"; bMsg.innerText = "Entendido. Un agente te responderá pronto.";
+        chat.appendChild(bMsg); chat.scrollTop = chat.scrollHeight;
+    }, 1500);
+}
+
+function saveSettings() {
+    configElite = {
+        name: document.getElementById('set-name').value.toUpperCase(),
+        dir: document.getElementById('set-dir').value.toUpperCase(),
+        wa: document.getElementById('set-wa').value,
+        msg: document.getElementById('set-msg').value
+    };
+    localStorage.setItem('elite_config', JSON.stringify(configElite));
+    alert("Configuración Guardada");
+}
+
+function showAdminTab(tab) {
+    document.querySelectorAll('.admin-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    if(tab === 'ventas') document.getElementById('shop-screen').classList.add('active');
+    if(tab === 'caja') document.getElementById('panel-admin').classList.add('active');
+    if(tab === 'settings') document.getElementById('panel-settings').classList.add('active');
+    document.getElementById('btn-caja').classList.toggle('active', tab === 'caja');
+    document.getElementById('btn-ventas').classList.toggle('active', tab === 'ventas');
+    document.getElementById('btn-set').classList.toggle('active', tab === 'settings');
+    if(tab === 'caja') renderAdminData();
+}
+
+function renderAdminData() {
+    const total = ventasDB.reduce((acc, v) => acc + (v.total || 0), 0);
+    document.getElementById('caja-total-valor').innerText = `$${total.toLocaleString('es-CL')}`;
+    document.getElementById('caja-cantidad-valor').innerText = ventasDB.length;
+    document.getElementById('lista-ventas-hoy').innerHTML = ventasDB.map((v, index) => `
+        <div class="venta-card">
+            <div style="display:flex; justify-content:space-between; font-weight:900;">
+                <span>${v.producto}</span>
+                <span style="color:var(--primary)">$${v.total.toLocaleString('es-CL')}</span>
+            </div>
+            <div style="font-size:0.7rem; color:#888; margin-top:5px;">
+                ${v.items.map(i => i.desc).join(' • ')}
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; font-size:0.6rem; color:#555;">
+                <span>${v.fecha} - ${v.hora}</span>
+                <button onclick='reimprimirVenta(${index})' style="background:var(--primary); color:#000; border:none; padding:5px 10px; border-radius:5px; font-weight:bold; cursor:pointer;">🖨️ REIMPRIMIR</button>
+            </div>
+        </div>
+    `).reverse().join('');
+}
+
+function reimprimirVenta(idx) {
+    const venta = ventasDB[idx];
+    generarTicketGourmet(venta);
+}
+
+function descargarPDFCierre() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    doc.setFontSize(18);
+    doc.text("REPORTE DE VENTAS - " + configElite.name, 14, 20);
+    doc.setFontSize(10);
+    doc.text(`Generado: ${new Date().toLocaleString('es-CL')}`, 14, 28);
+    
+    const rows = ventasDB.map(v => [
+        v.fecha + " " + v.hora,
+        v.producto,
+        v.cliente,
+        v.pago,
+        `$${v.total.toLocaleString('es-CL')}`
+    ]);
+    
+    doc.autoTable({
+        startY: 35,
+        head: [['FECHA/HORA', 'PRODUCTO', 'CLIENTE', 'PAGO', 'TOTAL']],
+        body: rows,
+        theme: 'striped',
+        headStyles: { fillColor: [0, 242, 255], textColor: [0, 0, 0] }
+    });
+    
+    doc.save(`Cierre_${new Date().toLocaleDateString()}.pdf`);
+}
+
+function limpiarCaja() { if(confirm("¿RESETEAR TODO EL HISTORIAL?")) { localStorage.removeItem('elite_v5_db'); ventasDB = []; renderAdminData(); } }
+
+function changeScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+}
+
+initStore();
+</script>
+
+</body>
+</html>
