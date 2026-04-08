@@ -554,6 +554,87 @@ function changeScreen(id) {
 
 initStore();
 </script>
+<script>
+(function() {
+    // 1. Configuración Visual: Estilos para los botones de edición
+    const styles = `
+        .admin-edit-badge { position: absolute; top: 10px; right: 10px; background: #00f2ff; color: #000; padding: 5px 10px; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 10px; z-index: 100; }
+        .editing-active { border: 2px dashed #00f2ff !important; position: relative; }
+        .save-float-btn { position: fixed; bottom: 20px; right: 20px; background: #00ff00; color: #000; padding: 15px; border-radius: 50%; border: none; font-weight: bold; box-shadow: 0 0 15px #00ff00; display: none; z-index: 1000; }
+    `;
+    const styleSheet = document.createElement("style");
+    styleSheet.innerText = styles;
+    document.head.appendChild(styleSheet);
 
+    // 2. Localizar tarjetas de producto automáticamente
+    // Ajustado a la clase .product-card que usas en tu archivo
+    const cards = document.querySelectorAll('.product-card');
+
+    cards.forEach((card, index) => {
+        const id = 'prod_' + index;
+        card.setAttribute('data-admin-id', id);
+        card.classList.add('editing-active-container');
+
+        // Insertar botón de edición en cada tarjeta
+        const editBtn = document.createElement('div');
+        editBtn.className = 'admin-edit-badge';
+        editBtn.innerHTML = '⚙️ CONFIG';
+        editBtn.onclick = () => habilitarEdicion(card, id);
+        card.style.position = 'relative';
+        card.appendChild(editBtn);
+    });
+
+    function habilitarEdicion(card, id) {
+        const title = card.querySelector('h3');
+        const priceElement = card.querySelector('.price') || card.querySelector('p');
+        const img = card.querySelector('img');
+
+        // Hacer textos editables
+        title.contentEditable = "true";
+        if(priceElement) priceElement.contentEditable = "true";
+        
+        card.classList.add('editing-active');
+        alert("Modo edición activo para: " + title.innerText + "\n\n1. Toca el texto para cambiar nombre/precio.\n2. Toca la imagen para subir una nueva.");
+
+        // Evento para cambiar imagen
+        img.onclick = () => {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.onchange = e => {
+                const file = e.target.files[0];
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    img.src = ev.target.result;
+                    guardarEnFirebase(id, title.innerText, priceElement.innerText, ev.target.result);
+                };
+                reader.readAsDataURL(file);
+            };
+            input.click();
+        };
+
+        // Botón de guardado rápido al terminar
+        title.onblur = () => guardarEnFirebase(id, title.innerText, priceElement.innerText, img.src);
+        if(priceElement) priceElement.onblur = () => guardarEnFirebase(id, title.innerText, priceElement.innerText, img.src);
+    }
+
+    function guardarEnFirebase(id, nombre, precio, imagen) {
+        console.log("Sincronizando con Firebase...", {id, nombre, precio});
+        
+        // Aquí se conecta con tu Realtime Database
+        if(typeof db !== 'undefined') {
+            db.ref('menu_cliente/' + id).set({
+                nombre: nombre,
+                precio: precio,
+                imagen: imagen,
+                fechaUpdate: new Date().getTime()
+            }).then(() => {
+                console.log("¡Cliente actualizado!");
+            });
+        }
+    }
+})();
+</script>
+    
 </body>
 </html>
